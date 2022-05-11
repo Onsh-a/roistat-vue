@@ -1,10 +1,10 @@
 <template>
-  <div class="custom-select" @blur="open = false">
+  <div class="custom-select" tabindex="2" @blur="open = false">
     <div class="selected" :class="{ open: open }" @click="open = !open">
       {{ selected.name }}
     </div>
     <div class="custom-select__items" :class="{ 'hidden': !open }">
-      <div v-for="(option) of options"
+      <div class="custom-select__item" v-for="(option) of options"
            :key="option.id"
            @click="handleChoose(option)">
         {{ option.name }}
@@ -14,9 +14,8 @@
 </template>
 
 <script>
-
 export default {
-  props: ['options', 'default', 'selectChief'],
+  props: ['options', 'default', 'selectChief', 'isActive'],
   data() {
     return {
       selected: this.default,
@@ -30,11 +29,16 @@ export default {
       this.selectChief(option.id);
     },
   },
+  watch: {
+    isActive(val) {
+      if (val === false) [this.selected] = this.options;
+    },
+  },
 };
 
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 
 .custom-select {
   position: relative;
@@ -86,17 +90,17 @@ export default {
     &.hidden {
       display: none;
     }
+  }
 
-    div {
-      padding-left: 10px;
-      cursor: pointer;
-      user-select: none;
-      transition: .2s;
+  &__item {
+    padding-left: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: .2s;
 
-      &:hover {
-        background-color: #2589FF;
-        color: #FFFFFF;
-      }
+    &:hover {
+      background-color: #2589FF;
+      color: #FFFFFF;
     }
   }
 }

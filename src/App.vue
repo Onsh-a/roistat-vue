@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <vHeader />
     <uiPopup :employees="getEmployees" />
     <div class="container">
       <employeeTable :employees="getEmployees" />
@@ -12,6 +13,7 @@
 import employeeTable from './components/employeeTable.vue';
 import uiButton from './components/uiButton.vue';
 import uiPopup from './components/uiPopup.vue';
+import vHeader from './components/vHeader.vue';
 
 export default {
   name: 'App',
@@ -19,6 +21,7 @@ export default {
     employeeTable,
     uiPopup,
     uiButton,
+    vHeader,
   },
   computed: {
     getEmployees() {
@@ -31,6 +34,7 @@ export default {
     },
   },
   async created() {
+    if (JSON.parse(localStorage.getItem('mockData'))) return this.$store.commit('setMockData');
     const url = '/mock.json';
     let response = await fetch(url);
     if (!response.ok) return false;
@@ -71,6 +75,10 @@ export default {
   max-width: 1200px;
   padding: 0 20px;
   margin: 0 auto;
+}
+
+body {
+  margin: 0;
 }
 
 </style>
