@@ -1,27 +1,24 @@
 <template>
-  <div class="modal" @keydown.esc="handleClose" :class="{ active: popupData.isActive }">
+  <div class="modal" @keydown.esc="handleClose"
+       @keydown.enter="handleAddNewEmployee" :class="{ active: popupData.isActive }">
     <div class="modal__container">
       <h3 class="modal__title"> Добавить сотрудника </h3>
       <div class="modal__edit-wrapper">
         <label class="modal__edit-label" for="name">Имя</label>
-        <input class="modal__edit-input" id="name" type="text"
+        <input class="modal__edit-input" ref="name" id="name" type="text"
                autocomplete="off" v-model="name.name" placeholder="Иван Иванов"/>
         <div v-show='name.error' class="modal-error">{{ name.error }}</div>
       </div>
       <div class="modal__edit-wrapper">
         <label class="modal__edit-label" for="phone">Телефон</label>
-        <input class="modal__edit-input" id="phone" type="text"
+        <input class="modal__edit-input" v-mask-ru="'# (###)-###-##-##'" id="phone" type="text"
                autocomplete="off" v-model="phone.phone" placeholder="8 (499) 433-06-98"/>
         <div v-show='phone.error' class="modal-error">{{ phone.error }}</div>
       </div>
       <div>
         <div class="modal__edit-label">Руководитель</div>
-        <uiSelect
-            :options="flatEmployees"
-            :default="flatEmployees[0]"
-            :selectChief="selectChief"
-            class="select"
-        />
+        <uiSelect :options="flatEmployees" :default="flatEmployees[0]"
+                  :selectChief="selectChief" :isActive="popupData.isActive"/>
       </div>
       <uiButton text="Сохранить" :handler="handleAddNewEmployee"/>
       <button @click='handleClose' class="modal__close">Закрыть</button>
@@ -41,14 +38,14 @@ export default {
   data() {
     return {
       name: {
-        name: '',
-        error: '',
+        name: null,
+        error: null,
       },
       phone: {
-        phone: '',
-        error: '',
+        phone: null,
+        error: null,
       },
-      chief: '',
+      chiefId: null,
     };
   },
   props: ['employees'],
@@ -62,18 +59,18 @@ export default {
       const flatted = [];
       flatted.push({
         name: 'Нет руководителя',
-        id: '',
+        id: null,
       });
       if (this.employees.length < 1) return flatted;
 
-      const rec = (data) => {
+      const flatten = (data) => {
         data.forEach((item) => {
           if (item.subordinates.length > 0) {
             flatted.push({
               name: item.name,
               id: item.id,
             });
-            rec(item.subordinates);
+            flatten(item.subordinates);
           } else {
             flatted.push({
               name: item.name,
@@ -83,47 +80,68 @@ export default {
         });
       };
 
-      rec(this.employees);
+      flatten(this.employees);
       return flatted;
     },
   },
   methods: {
     handleClose() {
-      this.name.error = '';
-      this.phone.error = '';
+      this.name.error = null;
+      this.phone.error = null;
       this.$store.state.popup.isActive = false;
     },
     generateId() {
       return `id_${(new Date()).getTime()}`;
     },
     selectChief(chiefId) {
-      console.log(chiefId);
-      this.chief = chiefId;
+      this.chiefId = chiefId;
     },
     validatePhone(phone) {
       const pattern = /^(\+7|7|8)?[\s-]?\(?[489][0-9]{2}\)?[\s-]?[0-9]{3}[\s-]?[0-9]{2}[\s-]?[0-9]{2}$/;
       return pattern.test(phone);
     },
-    // eslint-disable-next-line consistent-return
+    validateName(name) {
+      const pattern = /^[а-яА-ЯёЁa\s]+$/;
+      return pattern.test(name);
+    },
     handleAddNewEmployee() {
-      if (this.name.name.length < 2) {
+      if (!this.name.name || this.name.name.length < 2) {
         this.name.error = 'Имя должно состоять минимум из 2 символов';
         return false;
       }
-      this.name.error = '';
+      if (!this.validateName(this.name.name)) {
+        this.name.error = 'Допустимы только кириллические символы';
+        return false;
+      }
+      this.name.error = null;
       if (!this.validatePhone(this.phone.phone)) {
         this.phone.error = 'Неверный формат телефона';
         return false;
       }
-      this.phone.error = '';
+      this.phone.error = null;
       const newEmployee = {
         id: this.generateId(),
         name: this.name.name,
         phone: this.phone.phone,
         subordinates: [],
+        chiefId: this.chiefId,
       };
+      this.name.name = null;
+      this.phone.phone = null;
 
-      this.$store.commit('handleAddingNewEmployee', newEmployee);
+      this.handleClose();
+      return this.$store.commit('handleAddingNewEmployee', newEmployee);
+    },
+  },
+  watch: {
+    popupData(val) {
+      if (val.isActive === true) {
+        this.$nextTick(() => {
+          setTimeout(() => {
+            this.$refs.name.focus();
+          }, 300);
+        });
+      }
     },
   },
 };
@@ -190,10 +208,15 @@ export default {
     position: relative;
     overflow: hidden;
     min-width: 350px;
-    padding: 30px 20px 30px;
+    padding: 30px 20px;
     border-radius: 20px;
     margin: 0 auto;
     background-color: #FFFFFF;
+
+    @media (max-width: 600px) {
+      min-width: 300px;
+      padding: 20px 10px;
+    }
   }
 
   &__edit {
@@ -247,6 +270,10 @@ export default {
   position:absolute;
   bottom: 10px;
   font-size: 14px;
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+  }
 }
 
 </style>

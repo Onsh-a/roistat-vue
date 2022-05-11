@@ -10,7 +10,6 @@
       <employeeTableRow :key="subemployee.id"
                         :employee="subemployee"/>
     </template>
-
   </div>
 </template>
 
